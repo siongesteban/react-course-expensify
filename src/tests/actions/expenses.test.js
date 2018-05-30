@@ -4,6 +4,7 @@ import {
   addExpense,
   startAddExpense,
   editExpense,
+  startEditExpense,
   removeExpense,
   startRemoveExpense,
   setExpenses,
@@ -18,7 +19,7 @@ beforeEach((done) => {
   const expensesData = {};
 
   expenses.forEach(({ id, description, amount, note, createdAt }) => {
-    expensesData[id] = { id, description, amount, note, createdAt };
+    expensesData[id] = { description, amount, note, createdAt };
   })
 
   db.ref('expenses').set(expensesData).then(() => done());
@@ -63,6 +64,34 @@ test('should setup editExpense action object', () => {
     id: 'abc123',
     updates
   });
+});
+
+test('should edit expense from db', (done) => {
+  const store = createMockStore({});
+  const id = expenses[0].id;
+  const updates = {
+    description: 'Angular course',
+    note: 'Some note'
+  };
+
+  store.dispatch(startEditExpense(id, updates))
+    .then(() => {
+      const actions = store.getActions();
+      expect(actions[0]).toEqual({
+        type: 'EDIT_EXPENSE',
+        id,
+        updates
+      });
+
+      return db.ref(`expenses/${id}`).once('value');
+    })
+    .then((snapshot) => {
+      expect(snapshot.val()).toEqual({
+        ...snapshot.val(),
+        ...updates
+      });
+      done();
+    });
 });
 
 test('should setup addExpense action object with provided values', () => {
